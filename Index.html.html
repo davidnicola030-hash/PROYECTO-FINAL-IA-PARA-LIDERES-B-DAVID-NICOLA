@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ComEx Audit — Tablero de Control</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #F7F7F6;
+    --surface:   #FFFFFF;
+    --border:    #E4E4E2;
+    --text-1:    #1A1A18;
+    --text-2:    #6B6B66;
+    --text-3:    #9C9C96;
+    --accent:    #2A6BDF;
+    --green-bg:  #EDFAF3;
+    --green-fg:  #14784A;
+    --green-dot: #22C172;
+    --amber-bg:  #FFF8EC;
+    --amber-fg:  #8A5A00;
+    --amber-dot: #F59E0B;
+    --red-bg:    #FFF1F1;
+    --red-fg:    #9B1C1C;
+    --red-dot:   #EF4444;
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'Inter', sans-serif;
+    --radius:    6px;
+    --sidebar-w: 480px;
+  }
+  html { font-family: var(--sans); background: var(--bg); color: var(--text-1); font-size: 14px; }
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── TOPBAR ────────────────────────────────────── */
+  .topbar {
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    height: 100%;
+    border-right: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -.2px;
+    color: var(--text-1);
+    min-width: 200px;
+  }
+  .logo-icon {
+    width: 26px; height: 26px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: -.5px;
+    flex-shrink: 0;
+  }
+  .topbar-nav {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 12px;
+    flex: 1;
+    gap: 2px;
+  }
+  .nav-item {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: var(--radius);
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px;
+    color: var(--text-2);
+    cursor: pointer;
+    border: none; background: none;
+    transition: background .12s, color .12s;
+    white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text-1); }
+  .nav-item.active { background: #EBF1FD; color: var(--accent); font-weight: 500; }
+  .topbar-right {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 20px;
+    border-left: 1px solid var(--border);
+    height: 100%;
+  }
+  .avatar {
+    width: 28px; height: 28px;
+    background: #C7D7F5;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────── */
+  .app-body { display: flex; flex: 1; min-height: 0; }
+  .sidebar-nav {
+    width: 200px; flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 12px 8px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .snav-section {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding: 16px 8px 4px;
+  }
+  .snav-item {
+    display: flex; align-items: center; gap: 8px;
+    height: 30px; padding: 0 8px;
+    border-radius: var(--radius);
+    font-size: 13px; color: var(--text-2);
+    cursor: pointer;
+    border: none; background: none; width: 100%;
+    text-align: left;
+    transition: background .1s, color .1s;
+  }
+  .snav-item:hover { background: var(--bg); color: var(--text-1); }
+  .snav-item.active { background: #EBF1FD; color: var(--accent); font-weight: 500; }
+  .snav-count {
+    margin-left: auto;
+    background: var(--red-bg);
+    color: var(--red-fg);
+    font-size: 10px; font-weight: 600;
+    padding: 1px 5px; border-radius: 20px;
+  }
+
+  /* ── MAIN CONTENT ───────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+  .view-header {
+    padding: 20px 28px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .view-title-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px;
+  }
+  .view-title { font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
+  .view-subtitle { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .view-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 12px;
+    border-radius: var(--radius);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none;
+    transition: filter .12s, opacity .12s;
+    white-space: nowrap;
+  }
+  .btn:hover { filter: brightness(.95); }
+  .btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); color: var(--text-1); filter: none; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-danger  { background: var(--red-bg); color: var(--red-fg); border: 1px solid #FDCBCB; }
+  .btn-warn    { background: var(--amber-bg); color: var(--amber-fg); border: 1px solid #FDDDA0; }
+  .btn-success { background: var(--green-bg); color: var(--green-fg); border: 1px solid #BBEDCF; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+  .toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-wrap: wrap;
+  }
+  .search-box {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 10px;
+    height: 30px;
+    background: var(--bg);
+    transition: border-color .15s;
+  }
+  .search-box:focus-within { border-color: var(--accent); background: #fff; }
+  .search-box input {
+    border: none; background: none; outline: none;
+    font-size: 13px; color: var(--text-1); width: 200px;
+    font-family: var(--sans);
+  }
+  .search-box input::placeholder { color: var(--text-3); }
+  .filter-chip {
+    display: flex; align-items: center; gap: 4px;
+    height: 28px; padding: 0 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 12px; color: var(--text-2);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color .1s;
+  }
+  .filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-chip.active-red { background: var(--red-bg); border-color: #FDCBCB; color: var(--red-fg); }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .spacer { flex: 1; }
+  .stat-pill {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--text-2);
+    padding: 0 8px;
+  }
+
+  /* ── TABLE ──────────────────────────────────────── */
+  .table-wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 0 28px 28px;
+    background: var(--bg);
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .data-table thead { position: sticky; top: 0; z-index: 2; }
+  .data-table th {
+    background: var(--bg);
+    padding: 9px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .data-table th:first-child { padding-left: 20px; }
+  .data-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-1);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .data-table td:first-child { padding-left: 20px; }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr {
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .data-table tbody tr:hover { background: #FAFAF9; }
+  .data-table tbody tr.clickable:hover { background: #F0F4FF; }
+
+  .cell-muted { color: var(--text-2); }
+  .cell-mono  { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+
+  /* status badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: .02em;
+  }
+  .badge-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .badge-green { background: var(--green-bg); color: var(--green-fg); }
+  .badge-green .badge-dot { background: var(--green-dot); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber-fg); }
+  .badge-amber .badge-dot { background: var(--amber-dot); }
+  .badge-red   { background: var(--red-bg);   color: var(--red-fg);  }
+  .badge-red   .badge-dot { background: var(--red-dot); }
+
+  /* doc icons */
+  .doc-icons { display: flex; gap: 4px; }
+  .doc-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    font-size: 10px; font-weight: 500;
+    color: var(--text-2);
+    background: var(--bg);
+  }
+  .doc-chip.ok    { border-color: #BBEDCF; color: var(--green-fg); background: var(--green-bg); }
+  .doc-chip.warn  { border-color: #FDDDA0; color: var(--amber-fg); background: var(--amber-bg); }
+  .doc-chip.error { border-color: #FDCBCB; color: var(--red-fg);   background: var(--red-bg);  }
+  .doc-chip.miss  { border-color: var(--border); color: var(--text-3); }
+
+  .conf-bar {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-2);
+  }
+  .bar-track {
+    width: 64px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 2px; }
+
+  .action-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 24px; padding: 0 8px;
+    border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+    cursor: pointer; border: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    transition: background .1s, border-color .1s, color .1s;
+  }
+  .action-btn:hover { background: #EBF1FD; border-color: var(--accent); color: var(--accent); }
+
+  /* ── MODAL ──────────────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,10,.35);
+    z-index: 100;
+    display: none;
+    align-items: flex-start;
+    justify-content: flex-end;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .side-panel {
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--surface);
+    display: flex; flex-direction: column;
+    box-shadow: -8px 0 32px rgba(0,0,0,.1);
+    transform: translateX(100%);
+    transition: transform .22s cubic-bezier(.22,.68,0,1.08);
+    overflow: hidden;
+  }
+  .modal-overlay.open .side-panel {
+    transform: translateX(0);
+  }
+
+  .panel-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+    flex-shrink: 0;
+  }
+  .panel-header-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 15px; font-weight: 600;
+    letter-spacing: -.2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .close-btn {
+    width: 28px; height: 28px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-2);
+    font-size: 16px; line-height: 1;
+    transition: background .1s;
+  }
+  .close-btn:hover { background: var(--bg); }
+  .panel-meta {
+    display: flex; gap: 14px;
+    font-size: 12px; color: var(--text-2);
+  }
+  .panel-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .panel-body {
+    flex: 1; overflow-y: auto;
+    padding: 18px 22px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text-3); margin-bottom: 8px;
+  }
+
+  /* IA analysis box */
+  .ai-box {
+    background: #F9F8FF;
+    border: 1px solid #DDD8FF;
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .ai-box-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    color: #5B4FCF; text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 10px;
+  }
+  .ai-label-chip {
+    width: 16px; height: 16px;
+    background: #5B4FCF;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: #fff; letter-spacing: 0;
+    flex-shrink: 0;
+  }
+  .ai-text {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-1);
+  }
+
+  /* discrepancy list */
+  .disc-list { display: flex; flex-direction: column; gap: 10px; }
+  .disc-card {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .disc-card-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .disc-sev {
+    font-size: 11px; font-weight: 600;
+    padding: 2px 7px; border-radius: 20px;
+  }
+  .disc-sev.critical { background: var(--red-bg); color: var(--red-fg); }
+  .disc-sev.warning  { background: var(--amber-bg); color: var(--amber-fg); }
+  .disc-field { font-size: 12px; font-weight: 500; color: var(--text-1); }
+  .disc-body  { padding: 10px 14px; font-size: 12px; line-height: 1.6; color: var(--text-2); }
+  .disc-values {
+    display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .val-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-1);
+  }
+  .val-chip.bad { background: var(--red-bg); border-color: #FDCBCB; color: var(--red-fg); }
+  .val-chip.ref { background: var(--green-bg); border-color: #BBEDCF; color: var(--green-fg); }
+  .val-lbl { font-family: var(--sans); font-size: 10px; color: var(--text-3); }
+
+  /* doc comparison grid */
+  .doc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .doc-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .doc-card-title {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text-3);
+  }
+  .doc-card-rows { display: flex; flex-direction: column; gap: 4px; }
+  .doc-row { display: flex; flex-direction: column; }
+  .doc-key { font-size: 10px; color: var(--text-3); }
+  .doc-val { font-size: 12px; font-family: var(--mono); color: var(--text-1); font-weight: 500; }
+  .doc-val.mismatch { color: var(--red-fg); }
+
+  /* actions footer */
+  .panel-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px; flex-wrap: wrap;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .pulse {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--red-dot);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .5; transform: scale(.8); }
+  }
+
+  /* summary kpis */
+  .kpi-row {
+    display: flex; gap: 12px;
+    padding: 16px 28px 0;
+  }
+  .kpi-card {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .kpi-label { font-size: 11px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+  .kpi-value { font-size: 22px; font-weight: 600; letter-spacing: -.5px; margin-top: 2px; }
+  .kpi-sub   { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+  .kpi-card.kpi-red .kpi-value   { color: var(--red-fg);   }
+  .kpi-card.kpi-amber .kpi-value { color: var(--amber-fg); }
+  .kpi-card.kpi-green .kpi-value { color: var(--green-fg); }
+
+  /* toast */
+  .toast-container {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    z-index: 200;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--text-1);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .2s, transform .2s;
+    max-width: 320px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-icon">CE</div>
+    <span>ComEx Audit</span>
+  </div>
+  <nav class="topbar-nav">
+    <button class="nav-item">Inicio</button>
+    <button class="nav-item active">Embarques</button>
+    <button class="nav-item">Proveedores</button>
+    <button class="nav-item">Aranceles</button>
+    <button class="nav-item">Reportes</button>
+  </nav>
+  <div class="topbar-right">
+    <button class="btn btn-ghost" style="height:28px;font-size:12px;" onclick="showToast('⚙️ Configuración del sistema (simulado)')">Configuración</button>
+    <div class="avatar" onclick="showToast('👤 Usuario: Ana García — Analista ComEx')">AG</div>
+  </div>
+</div>
+
+<!-- ── APP BODY ──────────────────────── -->
+<div class="app-body">
+
+  <!-- left nav -->
+  <nav class="sidebar-nav">
+    <div class="snav-section">Vistas</div>
+    <button class="snav-item active">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="1" y1="5.5" x2="15" y2="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="9.5" x2="15" y2="9.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      Todos los embarques
+    </button>
+    <button class="snav-item" onclick="showToast('Vista de alertas críticas (simulado)')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><line x1="8" y1="6.5" x2="8" y2="9.5" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="11.5" r=".6" fill="currentColor"/></svg>
+      Alertas críticas
+      <span class="snav-count">2</span>
+    </button>
+    <button class="snav-item" onclick="showToast('Vista de pendientes (simulado)')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Pendientes revisión
+    </button>
+    <button class="snav-item" onclick="showToast('Embarques aprobados (simulado)')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Aprobados
+    </button>
+    <div class="snav-section">Reportes</div>
+    <button class="snav-item" onclick="showToast('Resumen mensual (simulado)')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="10" x2="9" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+      Resumen mensual
+    </button>
+    <button class="snav-item" onclick="showToast('Estadísticas de IA (simulado)')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="3" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="6.5" y="6" width="3" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="11" y="3" width="3" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+      Estadísticas IA
+    </button>
+  </nav>
+
+  <!-- main -->
+  <main class="main">
+
+    <!-- KPI cards -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total embarques</div>
+        <div class="kpi-value" style="color:var(--text-1)">4</div>
+        <div class="kpi-sub">Este mes</div>
+      </div>
+      <div class="kpi-card kpi-red">
+        <div class="kpi-label">Alertas críticas</div>
+        <div class="kpi-value">2</div>
+        <div class="kpi-sub">Requieren acción inmediata</div>
+      </div>
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-label">Advertencias</div>
+        <div class="kpi-value">1</div>
+        <div class="kpi-sub">Revisión recomendada</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <div class="kpi-label">Aprobados por IA</div>
+        <div class="kpi-value">1</div>
+        <div class="kpi-sub">Sin discrepancias</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Confianza IA promedio</div>
+        <div class="kpi-value" style="color:var(--accent)">87%</div>
+        <div class="kpi-sub">Sobre todos los documentos</div>
+      </div>
+    </div>
+
+    <!-- view header -->
+    <div class="view-header">
+      <div class="view-title-row">
+        <div>
+          <div class="view-title">Auditoría de embarques</div>
+          <div class="view-subtitle">Actualizado automáticamente · último análisis hace 4 min</div>
+        </div>
+        <div class="view-actions">
+          <button class="btn btn-ghost" onclick="showToast('Exportando a CSV… (simulado)')">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-primary" onclick="showToast('✉️ Procesando nuevos correos… (simulado)')">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4l6 5 6-5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="white" stroke-width="1.4"/></svg>
+            Procesar correos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="search-box">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9C9C96" stroke-width="1.4"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="#9C9C96" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Buscar embarque o proveedor…" />
+      </div>
+      <div class="filter-chip active-red">
+        <div class="chip-dot" style="background:var(--red-dot)"></div>
+        Crítico (2)
+      </div>
+      <div class="filter-chip">
+        <div class="chip-dot" style="background:var(--amber-dot)"></div>
+        Advertencia (1)
+      </div>
+      <div class="filter-chip">
+        <div class="chip-dot" style="background:var(--green-dot)"></div>
+        Aprobado (1)
+      </div>
+      <div class="spacer"></div>
+      <div class="stat-pill">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="#9C9C96" stroke-width="1.4"/><line x1="1" y1="5.5" x2="15" y2="5.5" stroke="#9C9C96" stroke-width="1.2"/><line x1="1" y1="9.5" x2="15" y2="9.5" stroke="#9C9C96" stroke-width="1.2"/></svg>
+        4 registros
+      </div>
+    </div>
+
+    <!-- table -->
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ref. embarque</th>
+            <th>Proveedor</th>
+            <th>País origen</th>
+            <th>Documentos</th>
+            <th>Incoterm</th>
+            <th>Valor (USD)</th>
+            <th>Confianza IA</th>
+            <th>Estado</th>
+            <th>Recibido</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ── ROW 1: ROJO (Peso) ── -->
+          <tr class="clickable" onclick="openPanel('red1')">
+            <td class="cell-mono">EMB-2026-0341</td>
+            <td>
+              <div style="font-weight:500">Shenzhen TechParts Co.</div>
+              <div class="cell-muted" style="font-size:11px">shenzhen-techparts.cn</div>
+            </td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">🇨🇳</span> China</div></td>
+            <td>
+              <div class="doc-icons">
+                <div class="doc-chip ok">BL</div>
+                <div class="doc-chip ok">FAC</div>
+                <div class="doc-chip error">PKG</div>
+              </div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:12px">FOB</span></td>
+            <td class="cell-mono">48 200</td>
+            <td>
+              <div class="conf-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:78%;background:#F59E0B"></div></div>
+                <span>78%</span>
+              </div>
+            </td>
+            <td><span class="badge badge-red"><span class="badge-dot"></span>Crítico</span></td>
+            <td class="cell-muted" style="font-size:12px">Hoy 09:14</td>
+            <td><button class="action-btn">Ver detalle →</button></td>
+          </tr>
+
+          <!-- ── ROW 2: ROJO (Incoterm) ── -->
+          <tr class="clickable" onclick="openPanel('red2')">
+            <td class="cell-mono">EMB-2026-0338</td>
+            <td>
+              <div style="font-weight:500">Müller Maschinenbau GmbH</div>
+              <div class="cell-muted" style="font-size:11px">mueller-mb.de</div>
+            </td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">🇩🇪</span> Alemania</div></td>
+            <td>
+              <div class="doc-icons">
+                <div class="doc-chip ok">BL</div>
+                <div class="doc-chip error">FAC</div>
+                <div class="doc-chip ok">PKG</div>
+              </div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:12px;color:var(--red-fg)">CIF / FOB</span></td>
+            <td class="cell-mono">112 800</td>
+            <td>
+              <div class="conf-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:91%;background:#22C172"></div></div>
+                <span>91%</span>
+              </div>
+            </td>
+            <td><span class="badge badge-red"><span class="badge-dot"></span>Crítico</span></td>
+            <td class="cell-muted" style="font-size:12px">Ayer 17:32</td>
+            <td><button class="action-btn">Ver detalle →</button></td>
+          </tr>
+
+          <!-- ── ROW 3: AMARILLO ── -->
+          <tr class="clickable" onclick="openPanel('amber1')">
+            <td class="cell-mono">EMB-2026-0335</td>
+            <td>
+              <div style="font-weight:500">Textiles del Mediterráneo S.A.</div>
+              <div class="cell-muted" style="font-size:11px">textmed.es</div>
+            </td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">🇪🇸</span> España</div></td>
+            <td>
+              <div class="doc-icons">
+                <div class="doc-chip ok">BL</div>
+                <div class="doc-chip warn">FAC</div>
+                <div class="doc-chip ok">PKG</div>
+              </div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:12px">CFR</span></td>
+            <td class="cell-mono">23 450</td>
+            <td>
+              <div class="conf-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:62%;background:#F59E0B"></div></div>
+                <span>62%</span>
+              </div>
+            </td>
+            <td><span class="badge badge-amber"><span class="badge-dot"></span>Advertencia</span></td>
+            <td class="cell-muted" style="font-size:12px">Hace 2 días</td>
+            <td><button class="action-btn">Ver detalle →</button></td>
+          </tr>
+
+          <!-- ── ROW 4: VERDE ── -->
+          <tr>
+            <td class="cell-mono">EMB-2026-0329</td>
+            <td>
+              <div style="font-weight:500">Korea Electro Supply Ltd.</div>
+              <div class="cell-muted" style="font-size:11px">ke-supply.kr</div>
+            </td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">🇰🇷</span> Corea del Sur</div></td>
+            <td>
+              <div class="doc-icons">
+                <div class="doc-chip ok">BL</div>
+                <div class="doc-chip ok">FAC</div>
+                <div class="doc-chip ok">PKG</div>
+              </div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:12px">EXW</span></td>
+            <td class="cell-mono">67 300</td>
+            <td>
+              <div class="conf-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:96%;background:#22C172"></div></div>
+                <span>96%</span>
+              </div>
+            </td>
+            <td><span class="badge badge-green"><span class="badge-dot"></span>Aprobado</span></td>
+            <td class="cell-muted" style="font-size:12px">Hace 3 días</td>
+            <td>
+              <button class="action-btn" style="color:var(--green-fg);border-color:#BBEDCF;background:var(--green-bg)" onclick="event.stopPropagation();showToast('✅ EMB-2026-0329 ya fue aprobado por IA')">
+                ✓ Aprobado
+              </button>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL PANEL
+═══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closePanel(event)">
+  <div class="side-panel" id="side-panel">
+
+    <!-- PANEL: red1 ── Discrepancia de peso -->
+    <div class="panel-content" id="panel-red1" style="display:none;height:100%;display:flex;flex-direction:column">
+      <div class="panel-header">
+        <div class="panel-header-row">
+          <div class="panel-title">
+            <span class="pulse"></span>
+            EMB-2026-0341 — Alerta crítica
+          </div>
+          <button class="close-btn" onclick="closePanelBtn()">✕</button>
+        </div>
+        <div class="panel-meta">
+          <span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 8h8M4 11h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Shenzhen TechParts Co.
+          </span>
+          <span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Hoy 09:14 hs
+          </span>
+          <span><span class="badge badge-red" style="font-size:10px"><span class="badge-dot"></span>Crítico</span></span>
+        </div>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- AI analysis -->
+        <div>
+          <div class="section-label">Análisis generado por IA</div>
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <div class="ai-label-chip">AI</div>
+              Diagnóstico — modelo claude-sonnet-4-6
+            </div>
+            <div class="ai-text">
+              Se detectó una <strong>discrepancia crítica de peso bruto</strong> entre el Bill of Lading y el Packing List para el embarque EMB-2026-0341.
+              <br><br>
+              El BL declara un peso bruto total de <strong>5.200 kg</strong>, mientras que la suma de los pesos individuales en el Packing List asciende a <strong>4.680 kg</strong>, representando una diferencia de <strong>520 kg (10,0%)</strong>, valor que supera el umbral de tolerancia configurado del 2%.
+              <br><br>
+              Esta discrepancia podría indicar: (a) un error de digitación en el BL emitido por el agente naviero, (b) bultos faltantes no reflejados en el Packing List, o (c) una modificación de última hora en la carga no comunicada al exportador. Se recomienda solicitar confirmación al proveedor antes de proceder con el despacho aduanero, ya que la aduana utilizará el peso del BL como dato de referencia y una diferencia de este nivel puede derivar en un aforo físico obligatorio.
+            </div>
+          </div>
+        </div>
+
+        <!-- discrepancies -->
+        <div>
+          <div class="section-label">Discrepancias detectadas (1)</div>
+          <div class="disc-list">
+            <div class="disc-card">
+              <div class="disc-card-head">
+                <span class="disc-sev critical">CRÍTICO</span>
+                <span class="disc-field">Peso bruto total</span>
+              </div>
+              <div class="disc-body">
+                El peso declarado en el BL no coincide con la suma de pesos del Packing List. La diferencia supera el umbral máximo permitido (2%).
+                <div class="disc-values">
+                  <div>
+                    <div class="val-lbl">BL — peso bruto</div>
+                    <div class="val-chip bad">5.200 kg</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Packing List — suma</div>
+                    <div class="val-chip ref">4.680 kg</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Diferencia</div>
+                    <div class="val-chip bad">Δ 520 kg (10,0%)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- doc comparison -->
+        <div>
+          <div class="section-label">Comparación de documentos</div>
+          <div class="doc-grid">
+            <div class="doc-card">
+              <div class="doc-card-title">Bill of Lading</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Peso bruto</div><div class="doc-val mismatch">5.200 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Incoterm</div><div class="doc-val">FOB</div></div>
+                <div class="doc-row"><div class="doc-key">Puerto destino</div><div class="doc-val">GYE</div></div>
+                <div class="doc-row"><div class="doc-key">N° contenedor</div><div class="doc-val">TCKU3456781</div></div>
+              </div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-card-title">Factura comercial</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Valor total</div><div class="doc-val">USD 48.200</div></div>
+                <div class="doc-row"><div class="doc-key">Incoterm</div><div class="doc-val">FOB</div></div>
+                <div class="doc-row"><div class="doc-key">Moneda</div><div class="doc-val">USD</div></div>
+                <div class="doc-row"><div class="doc-key">N° factura</div><div class="doc-val">STC-2026-441</div></div>
+              </div>
+            </div>
+            <div class="doc-card" style="border-color:#FDCBCB;background:var(--red-bg)">
+              <div class="doc-card-title" style="color:var(--red-fg)">Packing List ⚠</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Peso bruto total</div><div class="doc-val mismatch">4.680 kg</div></div>
+                <div class="doc-row"><div class="doc-key">N° de bultos</div><div class="doc-val">48</div></div>
+                <div class="doc-row"><div class="doc-key">Peso neto</div><div class="doc-val">4.210 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Confianza extracción</div><div class="doc-val">78%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn btn-danger" onclick="showToast('📧 Borrador de correo creado para Shenzhen TechParts Co. (simulado)')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4l6 5 6-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+          Contactar proveedor
+        </button>
+        <button class="btn btn-warn" onclick="showToast('⚠️ Aprobación registrada con nota de riesgo (simulado)')">
+          Aprobar bajo riesgo
+        </button>
+        <button class="btn btn-ghost" onclick="showToast('📋 Caso escalado al supervisor (simulado)')">Escalar</button>
+        <button class="btn btn-ghost" style="margin-left:auto" onclick="showToast('📥 Descargando PDFs del embarque (simulado)')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Descargar PDFs
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL: red2 ── Incoterm conflicto -->
+    <div class="panel-content" id="panel-red2" style="display:none;height:100%;display:flex;flex-direction:column">
+      <div class="panel-header">
+        <div class="panel-header-row">
+          <div class="panel-title">
+            <span class="pulse"></span>
+            EMB-2026-0338 — Alerta crítica
+          </div>
+          <button class="close-btn" onclick="closePanelBtn()">✕</button>
+        </div>
+        <div class="panel-meta">
+          <span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 8h8M4 11h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Müller Maschinenbau GmbH
+          </span>
+          <span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Ayer 17:32 hs
+          </span>
+          <span><span class="badge badge-red" style="font-size:10px"><span class="badge-dot"></span>Crítico</span></span>
+        </div>
+      </div>
+
+      <div class="panel-body">
+
+        <div>
+          <div class="section-label">Análisis generado por IA</div>
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <div class="ai-label-chip">AI</div>
+              Diagnóstico — modelo claude-sonnet-4-6
+            </div>
+            <div class="ai-text">
+              Se detectó una <strong>discrepancia crítica de Incoterm</strong> entre la Factura Comercial y el Bill of Lading para el embarque EMB-2026-0338.
+              <br><br>
+              La Factura Comercial emitida por Müller Maschinenbau GmbH declara el Incoterm <strong>CIF (Cost, Insurance and Freight)</strong>, mientras que el Bill of Lading emitido por el agente naviero registra <strong>FOB (Free on Board)</strong>. Esta diferencia tiene implicaciones directas y de alto impacto en la <strong>base imponible para el cálculo de derechos arancelarios</strong>.
+              <br><br>
+              Bajo CIF, el valor en aduana incluye el costo de flete y seguro internacional, incrementando la base de cálculo. Bajo FOB, estos costos quedan excluidos. Para una mercancía valorada en USD 112.800, la diferencia en la base imponible puede representar <strong>USD 4.000–8.000 adicionales</strong> dependiendo de las tarifas de flete, lo que podría derivar en un subpago de tributos aduaneros.  Esta inconsistencia debe ser resuelta con el proveedor antes de presentar la declaración aduanera.
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Discrepancias detectadas (1)</div>
+          <div class="disc-list">
+            <div class="disc-card">
+              <div class="disc-card-head">
+                <span class="disc-sev critical">CRÍTICO</span>
+                <span class="disc-field">Incoterm</span>
+              </div>
+              <div class="disc-body">
+                El Incoterm declarado en la Factura Comercial difiere del registrado en el BL. Impacto directo en la base imponible de la declaración aduanera.
+                <div class="disc-values">
+                  <div>
+                    <div class="val-lbl">Factura Comercial</div>
+                    <div class="val-chip bad">CIF</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Bill of Lading</div>
+                    <div class="val-chip ref">FOB</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Impacto estimado</div>
+                    <div class="val-chip bad">+USD 4.000–8.000</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Comparación de documentos</div>
+          <div class="doc-grid">
+            <div class="doc-card">
+              <div class="doc-card-title">Bill of Lading</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Incoterm</div><div class="doc-val">FOB Hamburg</div></div>
+                <div class="doc-row"><div class="doc-key">Peso bruto</div><div class="doc-val">3.840 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Puerto origen</div><div class="doc-val">DEHAM</div></div>
+                <div class="doc-row"><div class="doc-key">N° contenedor</div><div class="doc-val">MSCU7812340</div></div>
+              </div>
+            </div>
+            <div class="doc-card" style="border-color:#FDCBCB;background:var(--red-bg)">
+              <div class="doc-card-title" style="color:var(--red-fg)">Factura comercial ⚠</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Incoterm</div><div class="doc-val mismatch">CIF Guayaquil</div></div>
+                <div class="doc-row"><div class="doc-key">Valor total</div><div class="doc-val">USD 112.800</div></div>
+                <div class="doc-row"><div class="doc-key">N° factura</div><div class="doc-val">MM-DE-2026-089</div></div>
+                <div class="doc-row"><div class="doc-key">Confianza extracción</div><div class="doc-val">91%</div></div>
+              </div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-card-title">Packing List</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">N° de bultos</div><div class="doc-val">12</div></div>
+                <div class="doc-row"><div class="doc-key">Peso bruto total</div><div class="doc-val">3.840 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Peso neto</div><div class="doc-val">3.520 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Confianza extracción</div><div class="doc-val">94%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn btn-danger" onclick="showToast('📧 Borrador de correo creado para Müller Maschinenbau (simulado)')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4l6 5 6-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+          Contactar proveedor
+        </button>
+        <button class="btn btn-warn" onclick="showToast('⚠️ Aprobación registrada con nota de riesgo (simulado)')">
+          Aprobar bajo riesgo
+        </button>
+        <button class="btn btn-ghost" onclick="showToast('📋 Caso escalado al supervisor (simulado)')">Escalar</button>
+        <button class="btn btn-ghost" style="margin-left:auto" onclick="showToast('📥 Descargando PDFs del embarque (simulado)')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Descargar PDFs
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL: amber1 ── Baja confianza OCR -->
+    <div class="panel-content" id="panel-amber1" style="display:none;height:100%;display:flex;flex-direction:column">
+      <div class="panel-header">
+        <div class="panel-header-row">
+          <div class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color:#F59E0B"><path d="M8 2L14 13H2L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="8" y1="6.5" x2="8" y2="9.5" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="11.5" r=".6" fill="currentColor"/></svg>
+            EMB-2026-0335 — Advertencia
+          </div>
+          <button class="close-btn" onclick="closePanelBtn()">✕</button>
+        </div>
+        <div class="panel-meta">
+          <span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 8h8M4 11h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Textiles del Mediterráneo S.A.
+          </span>
+          <span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Hace 2 días
+          </span>
+          <span><span class="badge badge-amber" style="font-size:10px"><span class="badge-dot"></span>Advertencia</span></span>
+        </div>
+      </div>
+
+      <div class="panel-body">
+
+        <div>
+          <div class="section-label">Análisis generado por IA</div>
+          <div class="ai-box" style="background:#FFFCF2;border-color:#FDDDA0">
+            <div class="ai-box-header" style="color:#92600A">
+              <div class="ai-label-chip" style="background:#92600A">AI</div>
+              Diagnóstico — modelo claude-sonnet-4-6
+            </div>
+            <div class="ai-text">
+              La extracción de datos de la <strong>Factura Comercial</strong> (archivo <code style="font-family:var(--mono);font-size:12px;background:#FFF3CC;padding:1px 4px;border-radius:3px">TM-factura-2026-0335.pdf</code>) arrojó una <strong>confianza baja del 62%</strong>, significativamente por debajo del umbral mínimo de 80% configurado para aprobación automática.
+              <br><br>
+              El motivo probable es que el documento fue escaneado en baja resolución (se estima entre 80–100 DPI, frente a los 200 DPI mínimos recomendados). Los campos con mayor incertidumbre son el <strong>número de factura</strong> y la <strong>partida arancelaria sugerida</strong>, donde el modelo detectó ambigüedad entre caracteres similares (por ejemplo, "0" vs "O" en el código de partida).
+              <br><br>
+              No se detectaron discrepancias numéricas entre los tres documentos; los pesos, valores y Incoterm son consistentes. Se recomienda solicitar al proveedor el reenvío de la factura en formato PDF digital nativo (no escaneado) para completar la validación con alta confianza.
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Advertencias de extracción (2)</div>
+          <div class="disc-list">
+            <div class="disc-card">
+              <div class="disc-card-head">
+                <span class="disc-sev warning">BAJA CONFIANZA</span>
+                <span class="disc-field">N° de factura</span>
+              </div>
+              <div class="disc-body">
+                La IA no pudo confirmar con certeza el número de factura debido a la calidad del escaneo. Posibles valores identificados:
+                <div class="disc-values">
+                  <div>
+                    <div class="val-lbl">Lectura A (58%)</div>
+                    <div class="val-chip">TM-2026-0335</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Lectura B (38%)</div>
+                    <div class="val-chip">TM-2026-0335</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Confianza total</div>
+                    <div class="val-chip bad">62%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="disc-card">
+              <div class="disc-card-head">
+                <span class="disc-sev warning">VERIFICAR</span>
+                <span class="disc-field">Partida arancelaria</span>
+              </div>
+              <div class="disc-body">
+                El código de partida en la factura presenta ambigüedad entre dígitos. La clasificación arancelaria correcta afecta la tasa de arancel aplicable.
+                <div class="disc-values">
+                  <div>
+                    <div class="val-lbl">Lectura probable</div>
+                    <div class="val-chip">6302.21.00</div>
+                  </div>
+                  <div>
+                    <div class="val-lbl">Alternativa posible</div>
+                    <div class="val-chip bad">6302.91.00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Documentos — estado de extracción</div>
+          <div class="doc-grid">
+            <div class="doc-card">
+              <div class="doc-card-title">Bill of Lading</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Confianza</div><div class="doc-val" style="color:var(--green-fg)">94%</div></div>
+                <div class="doc-row"><div class="doc-key">Incoterm</div><div class="doc-val">CFR</div></div>
+                <div class="doc-row"><div class="doc-key">Peso bruto</div><div class="doc-val">1.240 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Puerto destino</div><div class="doc-val">GYE</div></div>
+              </div>
+            </div>
+            <div class="doc-card" style="border-color:#FDDDA0;background:var(--amber-bg)">
+              <div class="doc-card-title" style="color:var(--amber-fg)">Factura comercial ⚠</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Confianza</div><div class="doc-val mismatch" style="color:var(--amber-fg)">62%</div></div>
+                <div class="doc-row"><div class="doc-key">Incoterm</div><div class="doc-val">CFR</div></div>
+                <div class="doc-row"><div class="doc-key">Valor</div><div class="doc-val">USD 23.450</div></div>
+                <div class="doc-row"><div class="doc-key">Calidad PDF</div><div class="doc-val" style="color:var(--amber-fg)">Baja (~90 DPI)</div></div>
+              </div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-card-title">Packing List</div>
+              <div class="doc-card-rows">
+                <div class="doc-row"><div class="doc-key">Confianza</div><div class="doc-val" style="color:var(--green-fg)">91%</div></div>
+                <div class="doc-row"><div class="doc-key">N° bultos</div><div class="doc-val">32</div></div>
+                <div class="doc-row"><div class="doc-key">Peso bruto</div><div class="doc-val">1.240 kg</div></div>
+                <div class="doc-row"><div class="doc-key">Peso neto</div><div class="doc-val">1.090 kg</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn btn-warn" onclick="showToast('📧 Solicitud de PDF nativo enviada a textmed.es (simulado)')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4l6 5 6-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+          Solicitar PDF nativo
+        </button>
+        <button class="btn btn-ghost" onclick="showToast('🔄 Documento reenviado al motor de IA para re-análisis (simulado)')">Re-analizar</button>
+        <button class="btn btn-success" onclick="showToast('✅ Aprobado manualmente con advertencia registrada (simulado)')">
+          Aprobar con advertencia
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── TOASTS ─────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  let currentPanel = null;
+
+  function openPanel(id) {
+    document.querySelectorAll('.panel-content').forEach(el => el.style.display = 'none');
+    const panel = document.getElementById('panel-' + id);
+    if (panel) panel.style.display = 'flex';
+    document.getElementById('modal-overlay').classList.add('open');
+    currentPanel = id;
+  }
+
+  function closePanel(e) {
+    if (e.target === document.getElementById('modal-overlay')) closePanelBtn();
+  }
+
+  function closePanelBtn() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    currentPanel = null;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && currentPanel) closePanelBtn();
+  });
+
+  function showToast(msg) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => toast.classList.add('show'));
+    });
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }, 3200);
+  }
+</script>
+</body>
+</html>
